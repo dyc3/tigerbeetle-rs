@@ -51,7 +51,8 @@ where
             batch_next: ptr::null_mut(),
             batch_tail: ptr::null_mut(),
             batch_size: 0,
-            reserved: [0; 8],
+            batch_allowed: 0,
+            reserved: [0; 7],
         });
 
         let ptr = ManuallyDrop::new(Box::into_raw(raw));

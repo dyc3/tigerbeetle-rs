@@ -12,7 +12,7 @@ use std::{
 use quote::quote;
 use syn::visit::Visit;
 
-const TIGERBEETLE_RELEASE: &str = "0.15.5";
+const TIGERBEETLE_RELEASE: &str = "0.16.11";
 
 fn target_to_lib_dir(target: &str) -> Option<&'static str> {
     match target {
@@ -235,7 +235,7 @@ impl Visit<'_> for TigerbeetleVisitor {
             if enum_name.ends_with("_FLAGS") {
                 let ty = syn::Ident::new(
                     match enum_name.as_str() {
-                        "TB_ACCOUNT_FILTER_FLAGS" => "u32",
+                        "TB_ACCOUNT_FILTER_FLAGS" | "TB_QUERY_FILTER_FLAGS" => "u32",
                         "TB_ACCOUNT_FLAGS" | "TB_TRANSFER_FLAGS" => "u16",
                         other => panic!("unexpected flags type name: {other}"),
                     },
@@ -303,11 +303,13 @@ impl Visit<'_> for TigerbeetleVisitor {
                     variants.remove(0);
                 }
 
+                variants.sort_by(|(_, _, i), (_, _, j)| i.cmp(j));
+
                 let mut variants_iter = variants.iter();
                 let mut j = variants_iter.next().unwrap().2;
-                for (_, _, i) in variants_iter {
+                for (_v, _ident, i) in variants_iter {
                     j += 1;
-                    assert_eq!(*i, j);
+                    assert_eq!(*i, j, "variant {_v} ({_ident}) value is {i}, expected {j}");
                 }
 
                 let minmax_prefix = enum_name
@@ -421,7 +423,8 @@ impl bindgen::callbacks::ParseCallbacks for TigerbeetleCallbacks {
                 | "tb_account_filter_t"
                 | "tb_create_accounts_result_t"
                 | "tb_transfer_t"
-                | "tb_create_transfers_result_t",
+                | "tb_create_transfers_result_t"
+                | "tb_query_filter_t",
             ..
         } = info
         {
